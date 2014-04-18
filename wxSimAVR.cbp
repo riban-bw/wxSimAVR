@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="wxSimAVR" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/wxSimAVR" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Option projectLinkerOptionsRelation="2" />
+				<Compiler>
+					<Add option="-g" />
+					<Add option="`wx-config --cflags --debug`" />
+				</Compiler>
+				<Linker>
+					<Add option="`wx-config --libs --debug`" />
+				</Linker>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/wxSimAVR" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Option projectLinkerOptionsRelation="2" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="`wx-config --cflags`" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="`wx-config --libs`" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-std=c99" />
+			<Add directory="include" />
+			<Add directory="../simavr/simavr/sim" />
+			<Add directory="." />
+		</Compiler>
+		<Linker>
+			<Add library="simavr" />
+			<Add library=":libelf.so.0" />
+			<Add library="util" />
+		</Linker>
+		<Unit filename="images/pause.xpm" />
+		<Unit filename="images/pause_disabled.xpm" />
+		<Unit filename="images/play.xpm" />
+		<Unit filename="images/play_disabled.xpm" />
+		<Unit filename="images/reset.xpm" />
+		<Unit filename="images/reset_disabled.xpm" />
+		<Unit filename="images/stop.xpm" />
+		<Unit filename="images/stop_disabled.xpm" />
+		<Unit filename="include/ac_input.h" />
+		<Unit filename="include/avr.h" />
+		<Unit filename="include/button.h" />
+		<Unit filename="include/hc595.h" />
+		<Unit filename="include/hd44780.h" />
+		<Unit filename="include/hd44780_glut.h" />
+		<Unit filename="include/i2c_eeprom.h" />
+		<Unit filename="include/uart_pty.h" />
+		<Unit filename="include/uart_udp.h" />
+		<Unit filename="include/vhci_usb.h" />
+		<Unit filename="include/wxSimAVRApp.h" />
+		<Unit filename="include/wxSimAVRMain.h" />
+		<Unit filename="src/ac_input.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/avr.cpp" />
+		<Unit filename="src/button.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/hc595.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/hd44780.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/i2c_eeprom.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/uart_pty.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/uart_udp.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="src/wxSimAVRApp.cpp" />
+		<Unit filename="src/wxSimAVRMain.cpp" />
+		<Unit filename="wxsmith/wxSimAVRframe.wxs" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<wxsmith version="1">
+				<gui name="wxWidgets" src="src/wximAVRApp.cpp" main="wxSimAVRFrame" init_handlers="necessary" language="CPP" />
+				<resources>
+					<wxFrame wxs="wxsmith/wxSimAVRframe.wxs" src="src/wxSimAVRMain.cpp" hdr="include/wxSimAVRMain.h" fwddecl="0" i18n="1" name="wxSimAVRFrame" language="CPP" />
+				</resources>
+			</wxsmith>
+			<debugger />
+			<DoxyBlocks>
+				<comment_style block="0" line="0" />
+				<doxyfile_project />
+				<doxyfile_build />
+				<doxyfile_warnings />
+				<doxyfile_output />
+				<doxyfile_dot />
+				<general />
+			</DoxyBlocks>
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
