@@ -54,12 +54,12 @@ class wxAvr : public wxThread
         void OnExit();
 
         /** @brief  Pause thread
-        *   @return <i>wxThreadError</*> Error number (see wxThread::Pause)
+        *   @return <i>wxThreadError</i> Error number (see wxThread::Pause)
         */
         wxThreadError Pause();
 
         /** @brief  Resume thread
-        *   @return <i>wxThreadError</*> Error number (see wxThread::Resume)
+        *   @return <i>wxThreadError</i> Error number (see wxThread::Resume)
         */
         wxThreadError Resume();
 
@@ -178,16 +178,16 @@ class wxAvr : public wxThread
         */
         void SendStateEvent();
 
+        avr_t * m_pAvr; //!< Pointer to the AVR simulator
         uart_pty_t* m_pUart; //!< Pointer to UART
         int m_nDo_button_press;
-        avr_t * m_pAvr; //!< Pointer to the AVR simulator
+        wxString m_sType; //!< AVR chip type
+        unsigned long m_lFrequency; //!< AVR chip frequency
         avr_vcd_t* m_pVcd; //!< Pointer to Value Change Dump logger
         uint8_t	m_nPin_state;
         avr_flash m_flash; //!< Flash memory
-        wxString m_sType; //!< AVR chip type
-        unsigned long m_lFrequency; //!< AVR chip frequency
         bool m_bCrashed; //!< True if crashed
         wxMutex m_mutex; //!< Mutex protects pointer to avr from multi-thread access
-        unsigned int m_nState; //!< Current running state of AVR
+        int m_nState; //!< Current running state of AVR
 };
 

@@ -56,14 +56,13 @@ void wxAvr::OnExit()
         avr_terminate(m_pAvr);
     m_pAvr = NULL;
     m_mutex.Unlock();
-    wxThread::OnExit();
 }
 
 void* wxAvr::Entry()
 {
-    int nState = AVR_STATUS_LIMBO;
+    int nState = AVR_STATUS_RUNNING;
     if(!m_pAvr)
-        return NULL; //Need call Create() first
+        return NULL; //Need to call Create() first
     m_nState = AVR_STATUS_RUNNING;
     SendStateEvent();
     while(!TestDestroy())
@@ -72,16 +71,14 @@ void* wxAvr::Entry()
             return NULL; //!@todo Why are we checking this here?
         if(m_nState == AVR_STATUS_RUNNING)
             nState = avr_run(m_pAvr); //Run one cycle of AVR
+        else
+            nState = m_nState;
 		if(nState != m_nState)
         {
             m_nState = nState;
             if(nState == cpu_Done || nState == cpu_Crashed)
-            {
                 wxLogDebug(_("AVR finished with state %d"), nState);
-//                m_bCrashed = (cpu_Crashed == nState);
-                SendStateEvent();
-//                break;
-            }
+            SendStateEvent();
         }
     }
     return NULL;
@@ -105,9 +102,10 @@ void wxAvr::Init()
 wxThreadError wxAvr::Pause()
 {
     wxMutexLocker locker(m_mutex);
-    m_nState = AVR_STATUS_PAUSED;
+    wxThreadError nReturn = wxThread::Pause();
+    m_nState = AVR_STATUS_PAUSED; //!@todo m_nState is 2 at this point but should be 8
     SendStateEvent();
-    return wxThread::Pause();
+    return nReturn;
 }
 
 void wxAvr::Reset()

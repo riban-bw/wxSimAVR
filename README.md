@@ -9,6 +9,6 @@ wxSimAVR extends the wxThread class. The simulator runs in its own detached thre
 
 Initial development is performed on Ubuntu 13.10 linux using wxWidgets 2.8.12. It should be possibleto be port the library to other platforms supporting wxWidgets and simavr with minimal effort.
 
-This library is fully dependent on simavr <https://gitorious.org/simavr> which must be installed separately. The simavr headers must be available in the include search path.
+This library is dependent on simavr <https://gitorious.org/simavr> which must be installed separately, e.g. git clone git://gitorious.org/simavr/simavr.git. The simavr headers must be available in the include search path.
 
 The source code is initially developed within the Code::Blocks IDE and a Code::Blocks project is included in the source code.
