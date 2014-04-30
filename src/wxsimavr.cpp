@@ -103,7 +103,7 @@ wxThreadError wxAvr::Pause()
 {
     wxMutexLocker locker(m_mutex);
     wxThreadError nReturn = wxThread::Pause();
-    m_nState = AVR_STATUS_PAUSED; //!@todo m_nState is 2 at this point but should be 8
+    m_nState = AVR_STATUS_PAUSED;
     SendStateEvent();
     return nReturn;
 }
