@@ -8,12 +8,13 @@ extern "C" {
 #include "sim_hex.h"
 #include "sim_gdb.h"
 #include "avr_twi.h"
+#include "sim_core_decl.h" //!@todo must ensure this is same as compiled simavr library uses - defines available avr cores
 }
 
 DEFINE_EVENT_TYPE(wxEVT_AVR_STATUS); //event updates host with current avr status
 DEFINE_EVENT_TYPE(wxEVT_AVR_WRITE); //event informs host of write to avr pin
 
-wxAvr::wxAvr(wxEvtHandler* pHandler, const wxString& sType, long lFrequency) :
+wxAvr::wxAvr(wxEvtHandler* pHandler, wxString sType, long lFrequency) :
     wxThread(wxTHREAD_DETACHED),
     m_pEventHandler(pHandler),
     m_pAvr(NULL),
@@ -24,23 +25,15 @@ wxAvr::wxAvr(wxEvtHandler* pHandler, const wxString& sType, long lFrequency) :
     m_bCrashed(false),
     m_nState(AVR_STATUS_LIMBO)
 {
-}
-
-wxThreadError wxAvr::Create(unsigned int nStackSize)
-{
-    m_mutex.Lock(); //About to change avr pointer so lock the thread
     if(!m_pAvr)
         m_pAvr = avr_make_mcu_by_name(m_sType.mb_str());
     if(!m_pAvr)
-    {
-        m_mutex.Unlock();
-        return wxTHREAD_NO_RESOURCE;
+    {   //Unable to create avr core
+        //!@todo send error message (event)
+        return;
     }
     avr_init(m_pAvr);
 	m_pAvr->frequency = m_lFrequency; //do this after init because init sets to default 1000000
-	m_mutex.Unlock();
-//	StartUart();
-    return wxThread::Create(nStackSize);
 }
 
 void wxAvr::OnExit()
@@ -84,14 +77,6 @@ void* wxAvr::Entry()
     return NULL;
 }
 
-wxThreadError wxAvr::Resume()
-{
-    wxMutexLocker locker(m_mutex);
-    m_nState = AVR_STATUS_RUNNING;
-    SendStateEvent();
-    return wxThread::Resume();
-}
-
 void wxAvr::Init()
 {
     wxMutexLocker locker(m_mutex);
@@ -99,13 +84,50 @@ void wxAvr::Init()
         avr_init(m_pAvr);
 }
 
+void wxAvr::Start()
+{
+    wxMutexLocker locker(m_mutex);
+    if(IsRunning())
+        return;
+    if(!m_pAvr)
+        return;
+//	StartUart();
+    if(IsPaused())
+        Resume();
+    else
+        Run();
+}
+
+void wxAvr::Stop()
+{
+    wxMutexLocker locker(m_mutex);
+    if(IsRunning())
+        wxThread::Pause();
+    if(m_pAvr)
+        avr_reset(m_pAvr);
+    m_nState = AVR_STATUS_STOPPED;
+    SendStateEvent();
+}
+
 wxThreadError wxAvr::Pause()
 {
     wxMutexLocker locker(m_mutex);
+    if(!IsRunning())
+        return wxTHREAD_NOT_RUNNING;
     wxThreadError nReturn = wxThread::Pause();
     m_nState = AVR_STATUS_PAUSED;
     SendStateEvent();
     return nReturn;
+}
+
+wxThreadError wxAvr::Resume()
+{
+    wxMutexLocker locker(m_mutex);
+    if(!IsPaused())
+        return wxTHREAD_MISC_ERROR;
+    m_nState = AVR_STATUS_RUNNING;
+    SendStateEvent();
+    return wxThread::Resume();
 }
 
 void wxAvr::Reset()
@@ -130,6 +152,13 @@ int wxAvr::Step()
     return cpu_Limbo;
 }
 
+void wxAvr::SetFrequency(long lFrequency)
+{
+    wxMutexLocker locker(m_mutex);
+    if(m_pAvr)
+        m_pAvr->frequency = lFrequency;
+}
+
 void wxAvr::LoadCode(unsigned char* pCode, unsigned int nSize, unsigned int nAddress)
 {
     wxMutexLocker locker(m_mutex);
@@ -137,7 +166,7 @@ void wxAvr::LoadCode(unsigned char* pCode, unsigned int nSize, unsigned int nAdd
         avr_loadcode(m_pAvr, pCode, nSize, nAddress);
 }
 
-bool wxAvr::LoadFirmware(const wxString& sFirmware)
+bool wxAvr::LoadFirmware(wxString sFirmware)
 {
     wxMutexLocker locker(m_mutex);
     if(!m_pAvr)
@@ -149,26 +178,28 @@ bool wxAvr::LoadFirmware(const wxString& sFirmware)
     return true;
 }
 
-unsigned int wxAvr::LoadHex(const wxString& sHex)
+unsigned int wxAvr::LoadHex(wxString sFilename)
 {
-    //!@todo This fails on second call - read_ihex_file gets stuck in endless loop
     wxMutexLocker locker(m_mutex);
     if(!m_pAvr)
         return 0;
+    if(!wxFileExists(sFilename))
+        return 0;
     unsigned int nSize, nBase;
-    uint8_t * pBuffer = read_ihex_file(sHex.mbc_str(), &nSize, &nBase);
+    uint8_t * pBuffer = read_ihex_file(sFilename.mbc_str(), &nSize, &nBase);
     if(!pBuffer)
         return 0;
-    if(m_pAvr->flashend - nSize < nBase) //!@todo this may be checked in read_ihex_file
+    if(nBase + nSize > m_pAvr->flashend) //!@todo this may be checked in read_ihex_file
     {
-        wxLogDebug(_("wxAvr::Loadhex failed: Data larger than flash"));
+        free(pBuffer);
+        wxLogMessage("wxAvr::Loadhex failed: Data larger than flash");
         return 0;
     }
     memcpy(m_pAvr->flash + nBase, pBuffer, nSize);
     free(pBuffer);
 	m_pAvr->pc = nBase;
     m_pAvr->codeend = m_pAvr->flashend;
-    return nSize;
+    return nBase + nSize;
 }
 
 void wxAvr::StartDebugger(unsigned int nPort)
@@ -296,20 +327,67 @@ void wxAvr::SendStateEvent()
     wxPostEvent(m_pEventHandler, event);
 }
 
-void wxAvr::Stop()
-{
-    wxMutexLocker locker(m_mutex);
-    if(!m_pAvr)
-        return;
-    wxThread::Pause();
-    if(m_pAvr)
-        avr_reset(m_pAvr);
-    m_nState = AVR_STATUS_STOPPED;
-    SendStateEvent();
-}
-
 unsigned int wxAvr::GetStatus()
 {
     wxMutexLocker locker(m_mutex);
     return m_nState;
+}
+
+wxArrayString wxAvr::GetMcuNames(unsigned int nIndex)
+{
+	wxArrayString asNames;
+	if(avr_kind[nIndex]) //!@todo Is it safe to access array without bounds check? It seems to work and is used by simavr!
+    {
+        for(int nAlias = 0; avr_kind[nIndex]->names[nAlias]; nAlias++)
+            asNames.Add(avr_kind[nIndex]->names[nAlias]);
+	}
+	return asNames;
+}
+
+unsigned int wxAvr::GetFlashSize()
+{
+    wxMutexLocker locker(m_mutex);
+    if(!m_pAvr)
+        return 0;
+    return m_pAvr->flashend + 1;
+}
+
+unsigned int wxAvr::GetSramSize()
+{
+    wxMutexLocker locker(m_mutex);
+    if(m_pAvr)
+        return m_pAvr->ramend + 1;
+    return 0;
+}
+
+unsigned int wxAvr::GetEepromSize()
+{
+    wxMutexLocker locker(m_mutex);
+    if(m_pAvr)
+        return m_pAvr->e2end + 1;
+    return 0;
+}
+
+unsigned int wxAvr::GetVcc()
+{
+    wxMutexLocker locker(m_mutex);
+    if(m_pAvr)
+        return m_pAvr->vcc;
+    return 0;
+}
+
+unsigned int wxAvr::GetAvcc()
+{
+    wxMutexLocker locker(m_mutex);
+    if(m_pAvr)
+        return m_pAvr->avcc;
+    return 0;
+}
+
+unsigned int wxAvr::GetaRef()
+{
+    wxMutexLocker locker(m_mutex);
+    if(m_pAvr)
+        return m_pAvr->aref;
+    return 0;
 }

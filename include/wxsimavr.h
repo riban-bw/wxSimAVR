@@ -37,21 +37,28 @@ enum
 class wxAvr : public wxThread
 {
     public:
-        wxAvr(wxEvtHandler* pHandler, const wxString& sType = wxT("atmega328p"), long lFrequency = 16000000);
-
-        /** @brief  Creates a new thread
-        *   @param  nStackSize Size of stack
-        *   @return <i>wxThreadError</i> Error code
+        /** @brief  Constructs a wxAvr instance
+        *   @param  pHandler wxWidgets event handler to recieve events
+        *   @param  sType Name of the AVR MCU type to simulate
+        *   @param  lFrequency Frequency to run MCU simulation
         */
-        wxThreadError Create(unsigned int nStackSize = 0);
+        wxAvr(wxEvtHandler* pHandler, wxString sType, long lFrequency);
+
+        /** @brief  Called when thread exits
+        */
+        void OnExit();
 
         /** @brief  Initializes a new AVR instance. Will call the IO registers init(), and then reset()
         */
         void Init();
 
-        /** @brief  Called when thread exits
+        /** @brief  Start AVR MCU
         */
-        void OnExit();
+        void Start();
+
+        /** @brief  Stop and reset AVR MPU
+        */
+        void Stop();
 
         /** @brief  Pause thread
         *   @return <i>wxThreadError</i> Error number (see wxThread::Pause)
@@ -63,10 +70,6 @@ class wxAvr : public wxThread
         */
         wxThreadError Resume();
 
-        /** @brief  Stop and reset AVR CPU
-        */
-        void Stop();
-
         /** @brief  Resets the AVR, and the IO modules
         */
         void Reset();
@@ -75,6 +78,11 @@ class wxAvr : public wxThread
         *   @return <i>int</i> Simulator state.
         */
         int Step();
+
+        /** :brief  Set the MCR frequency
+        *   @param  lFrequency Frequency
+        */
+        void SetFrequency(long lFrequency);
 
         /** @brief  Load code to the "flash"
         *   @param  pCode Pointer to the code
@@ -87,13 +95,13 @@ class wxAvr : public wxThread
         *   @param  sFirmware Firmware filename
         *   @return <i>bool</i> True on success
         */
-        bool LoadFirmware(const wxString& sFirmware);
+        bool LoadFirmware(wxString sFirmware);
 
         /** @brief  Loads an Intel hex file
-        *   @param  sHex Intel hex filename
+        *   @param  sFilename Intel hex filename
         *   @return <i>unsigned int</i> Size of data
         */
-        unsigned int LoadHex(const wxString& sHex);
+        unsigned int LoadHex(wxString sFilename);
 
         /** @brief  Enable GDB debugger
         *   @param  nPort GDB port number
@@ -150,11 +158,46 @@ class wxAvr : public wxThread
         */
         wxString GetMcuType();
 
-        /** @brief  Gets the running status of the MCU
+        /** @brief  Get the running status of the MCU
         *   @return <i>unsigned int</i> Status
         */
         unsigned int GetStatus();
 
+        /** @brief  Get list of names (aliases) for MCU type
+        *   @param  nIndex Index of MCU type
+        *   @return <i>wxArrayString</i> Array of configured MCU types. Empty if invalid index
+        */
+        static wxArrayString GetMcuNames(unsigned int nIndex);
+
+        /** @brief  Get the size of flash memory in bytes
+        *   @return Flash size
+        */
+        unsigned int GetFlashSize();
+
+        /** @brief  Get the Size of the SRAM in bytes
+        *   @return SRAM size
+        */
+        unsigned int GetSramSize();
+
+        /** @brief  Get the size of EEPROM in bytes
+        *   @return EEPROM size
+        */
+        unsigned int GetEepromSize();
+
+        /** @brief  Get the Vcc
+        *   @return Vcc in millivots
+        */
+        unsigned int GetVcc();
+
+        /** @brief  Get the analogue Vcc
+        *   @return aVcc in millivots
+        */
+        unsigned int GetAvcc();
+
+        /** @brief  Get the analogue reference
+        *   @return Reference in millivots
+        */
+        unsigned int GetaRef();
 
     protected:
         /** @brief  Thread entry point
