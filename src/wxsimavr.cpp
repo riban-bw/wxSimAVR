@@ -60,6 +60,7 @@ void* wxAvr::Entry()
     SendStateEvent();
     while(!TestDestroy())
     {
+        //!@todo Using excessive CPU when running
         if(!m_pAvr)
             return NULL; //!@todo Why are we checking this here?
         if(m_nState == AVR_STATUS_RUNNING)
